@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "989115786524",
+    "project_id": "mylez-loveefy-app",
+    "storage_bucket": "mylez-loveefy-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:989115786524:android:8c08052fab5e0f019386d9",
+        "android_client_info": {
+          "package_name": "com.example.loveefy"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "989115786524-dae25l3cqj9pk0ahuq86gl0me23c28ck.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDinvztlTu9YCRJ-Ne4GxfDFaapFHoAgpQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "989115786524-dae25l3cqj9pk0ahuq86gl0me23c28ck.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
