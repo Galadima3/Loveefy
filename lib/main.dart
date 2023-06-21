@@ -1,4 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -37,29 +39,50 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.red,
       ),
-      home: showHome ? const AuthChecker() : const OnboardingScreen(),
+      home: showHome ? AuthChecker() : const OnboardingScreen(),
     );
   }
 }
 
-class HomePage extends StatelessWidget {
-  final User user;
-  const HomePage({super.key, required this.user});
+class HomePage extends ConsumerStatefulWidget {
+  HomePage({super.key});
+  final user = FirebaseAuth.instance.currentUser;
+  @override
+  ConsumerState<ConsumerStatefulWidget> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  Future<String> getImageUrl() async {
+    // Reference the Firebase Storage bucket and file path of your image
+    final ref =
+        FirebaseStorage.instance.ref().child('files/img_20230620_204950.jpg');
+
+    // Get the download URL for the image
+    final url = await ref.getDownloadURL();
+
+    return url;
+  }
 
   @override
   Widget build(BuildContext context) {
+    print('Home Page User =>${widget.user}');
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
+        actions: [
+          IconButton(
             onPressed: () async {
-              AuthRepository().signOut();
-              Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const LandingScreen(),));
-              
+              ref.read(authRepositoryProvider).signOut();
+              Navigator.of(context).pushReplacement(MaterialPageRoute(
+                builder: (context) => const LandingScreen(),
+              ));
             },
-            icon: const Icon(Icons.logout)),
+            icon: const Icon(Icons.logout),
+          ),
+        ],
       ),
       body: Center(
-        child: Text('Home Page => ${user.displayName}'),
+        child:
+            Text('Home Page => ${widget.user!.displayName ?? 'Unavailable'}'),
       ),
     );
   }

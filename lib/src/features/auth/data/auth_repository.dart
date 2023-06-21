@@ -1,67 +1,76 @@
 import 'dart:developer';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AuthRepository {
-  FirebaseAuth auth = FirebaseAuth.instance;
+  final _auth = FirebaseAuth.instance;
 
-  Future<User?> registerUsingEmailPassword({
-    
-    required String email,
-    required String password,
-  }) async {
-    // FirebaseAuth auth = FirebaseAuth.instance;
-    User? user;
+  //getters
+  User? get userDetails => _auth.currentUser;
+  Stream<User?> get authStateChange => _auth.idTokenChanges();
 
+  Future<User?> signInWithEmailAndPassword(
+      //sign in method
+      String email,
+      String password) async {
     try {
-      UserCredential userCredential = await auth.createUserWithEmailAndPassword(
+      final result = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-
-      user = userCredential.user;
-      // await user!.updateDisplayName(name);
-      await user!.reload();
-      user = auth.currentUser;
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'weak-password') {
-        log('The password provided is too weak.');
-      } else if (e.code == 'email-already-in-use') {
-        log('The account already exists for that email.');
-      }
-    } catch (e) {
-      log(e.toString());
-    }
-    return user;
-  }
-
-  Future<User?> signInUsingEmailPassword({
-    required String email,
-    required String password,
-  }) async {
-    // FirebaseAuth auth = FirebaseAuth.instance;
-    User? user;
-
-    try {
-      UserCredential userCredential = await auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      user = userCredential.user;
+      log('Sign in successful');
+      return result.user;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
-        log('No user found for that email.');
+        throw AuthException('User not found');
       } else if (e.code == 'wrong-password') {
-        log('Wrong password provided.');
+        throw AuthException('Wrong password');
+      } else {
+        log(e.message ?? 'No error occured');
+        throw AuthException('An error occured. Please try again later');
       }
     }
-    return user;
   }
 
+  Future<User?> signUp(String email, String password) async {
+    try {
+      final result = await _auth.createUserWithEmailAndPassword(
+          email: email, password: password);
+      log('Sign up successful');
+      
+      return result.user;
+    } on FirebaseAuthException catch (e) {
+      throw Exception(e.message);
+    }
+  }
+
+  //sign out method
   Future<void> signOut() async {
-    // FirebaseAuth auth = FirebaseAuth.instance;
-    await auth.signOut();
+    await _auth.signOut();
   }
-
-  
 }
+
+class AuthException implements Exception {
+  final String message;
+
+  AuthException(this.message);
+
+  @override
+  String toString() {
+    return message;
+  }
+}
+
+//Providers
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  return AuthRepository();
+});
+
+final authStateProvider = StreamProvider<User?>((ref) {
+  return ref.read(authRepositoryProvider).authStateChange;
+});
+
+final userDetailsProvider = Provider.autoDispose<User?>((ref) {
+  return ref.read(authRepositoryProvider).userDetails;
+});

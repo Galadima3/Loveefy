@@ -1,38 +1,46 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:loveefy/main.dart';
 import 'package:loveefy/src/features/auth/data/firestore_repository.dart';
 import 'package:loveefy/src/features/auth/presentation/shared_widgets/fancy_button.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:developer';
 
-class ProfileDetails extends StatefulWidget {
+import 'package:path/path.dart';
+
+class ProfileDetails extends ConsumerStatefulWidget {
   final User user;
   const ProfileDetails({super.key, required this.user});
 
   @override
-  State<ProfileDetails> createState() => _ProfileDetailsState();
+  ConsumerState<ConsumerStatefulWidget> createState() => _ProfileDetailsState();
 }
 
-class _ProfileDetailsState extends State<ProfileDetails> {
-  String? firstName;
-  @override
-  void initState() {
-    super.initState();
-  }
-
+class _ProfileDetailsState extends ConsumerState<ProfileDetails> {
   final firstNameController = TextEditingController();
   final lastNameController = TextEditingController();
   final dateController = TextEditingController();
-  Future<void> onSubmit() async {
+
+  Future<void> onSubmit(BuildContext ctx) async {
     await widget.user.updateDisplayName(
         "${firstNameController.text} ${lastNameController.text}");
-    String uid = widget.user.uid;
+    log('Onsumbit user => ${widget.user.displayName}');
     FirestoreRepository.addEntry1(firstNameController.text,
-        lastNameController.text, dateController.text, widget.user.email!).then((value) {
-          //return 
-        });
+            lastNameController.text, dateController.text, widget.user.email!)
+        .then((value) {
+      Navigator.pushReplacement(ctx, MaterialPageRoute(
+        builder: (context) {
+          return HomePage();
+        },
+      ));
+    });
   }
 
   @override
@@ -43,8 +51,50 @@ class _ProfileDetailsState extends State<ProfileDetails> {
     super.dispose();
   }
 
-//  CollectionReference users = FirebaseFirestore.instance.collection('users');
   final db = FirebaseFirestore.instance;
+  FirebaseStorage storage = FirebaseStorage.instance;
+
+  File? _photo;
+  final ImagePicker _picker = ImagePicker();
+
+  Future imgFromGallery() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+
+    setState(() {
+      if (pickedFile != null) {
+        _photo = File(pickedFile.path);
+        uploadFile();
+      } else {
+        log('No image selected.');
+      }
+    });
+  }
+
+  Future imgFromCamera() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.camera);
+
+    setState(() {
+      if (pickedFile != null) {
+        _photo = File(pickedFile.path);
+        uploadFile();
+      } else {
+        log('No image selected.');
+      }
+    });
+  }
+
+  Future uploadFile() async {
+    if (_photo == null) return;
+    final fileName = basename(_photo!.path);
+    final destination = 'files/$fileName';
+
+    try {
+      final ref = FirebaseStorage.instance.ref(destination).child('file/');
+      await ref.putFile(_photo!);
+    } catch (e) {
+      print('error occured');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,12 +129,37 @@ class _ProfileDetailsState extends State<ProfileDetails> {
             //Text(widget.user.displayName!),
             const SizedBox(height: 20),
             //Picture
-            Container(
-              height: 101,
-              width: 106,
-              decoration: BoxDecoration(
-                  color: Colors.amber, borderRadius: BorderRadius.circular(12)),
+            GestureDetector(
+              onTap: () {
+                _showPicker(context);
+              },
+              child: CircleAvatar(
+                radius: 55,
+                backgroundColor: const Color(0xffFDCF09),
+                child: _photo != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(50),
+                        child: Image.file(
+                          _photo!,
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : Container(
+                        decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(50)),
+                        width: 100,
+                        height: 100,
+                        child: Icon(
+                          Icons.add_a_photo,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+              ),
             ),
+
             const SizedBox(height: 20),
 
             //first name
@@ -165,7 +240,7 @@ class _ProfileDetailsState extends State<ProfileDetails> {
             const SizedBox(height: 20),
             //
             GestureDetector(
-                onTap: () => onSubmit(),
+                onTap: () => onSubmit(context),
                 child: const FancyButton(
                   text: 'Confirm',
                 ))
@@ -173,5 +248,38 @@ class _ProfileDetailsState extends State<ProfileDetails> {
         ),
       ),
     ));
+  }
+
+  void _showPicker(context) {
+    showModalBottomSheet(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(20.0),
+          ),
+        ),
+        builder: (BuildContext bc) {
+          return SafeArea(
+            child: Wrap(
+              children: <Widget>[
+                ListTile(
+                    leading: const Icon(Icons.photo_library),
+                    title: const Text('Gallery'),
+                    onTap: () {
+                      imgFromGallery();
+                      Navigator.of(context).pop();
+                    }),
+                ListTile(
+                  leading: const Icon(Icons.photo_camera),
+                  title: const Text('Camera'),
+                  onTap: () {
+                    imgFromCamera();
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            ),
+          );
+        });
   }
 }
