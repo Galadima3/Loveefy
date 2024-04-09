@@ -92,7 +92,7 @@ class _ProfileDetailsState extends ConsumerState<ProfileDetails> {
       final ref = FirebaseStorage.instance.ref(destination).child('file/');
       await ref.putFile(_photo!);
     } catch (e) {
-      print('error occured');
+      log('error occured');
     }
   }
 
@@ -225,8 +225,8 @@ class _ProfileDetailsState extends ConsumerState<ProfileDetails> {
                         lastDate: DateTime(2100));
 
                     if (pickedDate != null) {
-                      print(
-                          pickedDate); //pickedDate output format => 2021-03-10 00:00:00.000
+                      log(pickedDate
+                          .toIso8601String()); //pickedDate output format => 2021-03-10 00:00:00.000
                       String formattedDate =
                           DateFormat('yyyy-MM-dd').format(pickedDate);
                       log(formattedDate); //formatted date output using intl package =>  2021-03-16

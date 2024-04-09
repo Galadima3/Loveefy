@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
@@ -65,7 +67,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    print('Home Page User =>${widget.user}');
+    log('Home Page User =>${widget.user}');
     return Scaffold(
       appBar: AppBar(
         actions: [
